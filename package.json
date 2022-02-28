@@ -1,0 +1,23 @@
+{
+  "name": "esd_queue",
+  "version": "1.0.0",
+  "description": "esd queue apis",
+  "main": "index.js",
+  "scripts": {
+    "test": "test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/JowettC/esd_queue.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/JowettC/esd_queue/issues"
+  },
+  "homepage": "https://github.com/JowettC/esd_queue#readme",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.17.3"
+  }
+}
