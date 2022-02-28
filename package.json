@@ -18,6 +18,8 @@
   "homepage": "https://github.com/JowettC/esd_queue#readme",
   "dependencies": {
     "cors": "^2.8.5",
-    "express": "^4.17.3"
+    "dayjs": "^1.10.7",
+    "express": "^4.17.3",
+    "mysql": "^2.18.1"
   }
 }
