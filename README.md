@@ -8,3 +8,5 @@ Go to wampp -> myPhpAdmin -> sql -> run the mysql statements
 
 ## run index.js ##
 ``` node index.js ```
+
+### It runs on localhost:3000
