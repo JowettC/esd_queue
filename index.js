@@ -23,7 +23,7 @@ const port = 3000
 app.get('/queue/:shop_id', async (req, res) => {
     //  get queue from database
     try {
-        await db.query(`select * from queue where is_done = false and shop_shop_id = ${req.params.shop_id}`, function (err, rows) {
+        await db.query(`select * from mydb_queue.queue where is_done = false and shop_shop_id = ${req.params.shop_id}`, function (err, rows) {
             if (err) {
                 console.log(err)
                 res.status(400).send({
@@ -50,7 +50,7 @@ app.post('/queue', async (req, res) => {
     console.log("creating queue")
     try {
         // get size of queue to generate queue number
-        db.query(`select * from queue where is_done = false and shop_shop_id = ${req.body.shop_id}`, function (err, queue) {
+        db.query(`select * from mydb_queue.queue where is_done = false and shop_shop_id = ${req.body.shop_id}`, function (err, queue) {
             if (err) {
                 console.log("test")
                 res.status(400).send({
@@ -75,7 +75,7 @@ app.post('/queue', async (req, res) => {
                         }
                         var queueNumber = shop_name[0].name + "-" + size;
                         // check if person queued up already
-                        db.query(`SELECT * FROM queue WHERE phone_number =${req.body.phone_number} and is_done = false`, function (err, exist) {
+                        db.query(`SELECT * FROM mydb_queue.queue WHERE phone_number =${req.body.phone_number} and is_done = false`, function (err, exist) {
                             if (err) {
                                 console.log(err)
                             } else {
@@ -86,7 +86,7 @@ app.post('/queue', async (req, res) => {
                                     })
                                 } else {
                                     // insert queue
-                                    db.query(`INSERT INTO queue (queue_number,is_done,time_created,phone_number,shop_shop_id,is_alert,acknowledge) 
+                                    db.query(`INSERT INTO mydb_queue.queue (queue_number,is_done,time_created,phone_number,shop_shop_id,is_alert,acknowledge) 
                         values("${queueNumber}",false,"${dayjs()}",${req.body.phone_number},${req.body.shop_id},false,false);`, function (err) {
                                         if (err) {
                                             console.log(err)
