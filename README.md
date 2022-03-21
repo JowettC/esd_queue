@@ -1,7 +1,7 @@
 # esd_queue
 
 ## Generate database 
-Go to wampp -> myPhpAdmin -> sql -> run the mysql statements 
+Go to wampp -> myPhpAdmin -> sql -> run the mysql statements (get latest script from trello, db script ticket's attachment)
 
 ## install dependencies
 ``` npm install ```
