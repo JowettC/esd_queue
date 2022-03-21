@@ -50,7 +50,7 @@ app.post('/queue', async (req, res) => {
     console.log("creating queue")
     try {
         // get size of queue to generate queue number
-        db.query(`select * from mydb_queue.queue where is_done = false and shop_shop_id = ${req.body.shop_id}`, function (err, queue) {
+        db.query(`select * from mydb_queue.queue where shop_shop_id = ${req.body.shop_id}`, function (err, queue) {
             if (err) {
                 console.log("test")
                 res.status(400).send({
@@ -60,7 +60,7 @@ app.post('/queue', async (req, res) => {
             } else {
                 var size = queue.length;
                 //  check if shope exist
-                db.query(`select name from shop where shop_id = ${req.body.shop_id}`, function (err, shop_name) {
+                db.query(`select name from mydb_shop.shop where shop_id = ${req.body.shop_id}`, function (err, shop_name) {
                     if (err) {
                         res.status(400).send({
                             success: false,
@@ -72,6 +72,7 @@ app.post('/queue', async (req, res) => {
                                 success: false,
                                 msg: "Shop doesn't exist"
                             })
+                            return
                         }
                         var queueNumber = shop_name[0].name + "-" + size;
                         // check if person queued up already
@@ -87,7 +88,7 @@ app.post('/queue', async (req, res) => {
                                 } else {
                                     // insert queue
                                     db.query(`INSERT INTO mydb_queue.queue (queue_number,is_done,time_created,phone_number,shop_shop_id,is_alert,acknowledge) 
-                        values("${queueNumber}",false,"${dayjs()}",${req.body.phone_number},${req.body.shop_id},false,false);`, function (err) {
+                        values("${queueNumber}",false,"${dayjs().format("YYYY-DD-MM HH:MM:00")}",${req.body.phone_number},${req.body.shop_id},false,false);`, function (err) {
                                         if (err) {
                                             console.log(err)
                                         } else {
@@ -120,42 +121,40 @@ app.post('/queue', async (req, res) => {
     }
 
 })
-// customer acknowledge queue
+// customer acknowledge queue potentially removed
 app.put('/customer/confrim', (req, res) => {
     var phone_number = req.body.phone_number;
     var shop_id = req.body.shop_id;
     // check if customer is in queue
-    db.query(`select queue_id,acknowledge from queue where phone_number = ${phone_number} and shop_shop_id = ${shop_id} and is_done = false`, function (err, exist) {
+    db.query(`select queue_id,acknowledge from mydb_queue.queue where phone_number = ${phone_number} and shop_shop_id = ${shop_id} and is_done = false`, function (err, exist) {
         if (err) {
             res.status(400).send({
                 success: false,
                 msg: err
             })
         } else {
-            if(exist.length == 0){
+            if (exist.length == 0) {
                 res.status(404).send({
                     success: false,
                     msg: "You're not in queue, please get queue number"
                 })
             }
             // console.log(exist[0].acknowledge)
-            if(exist[0].acknowledge == 1){
+            if (exist[0].acknowledge == 1) {
                 res.status(400).send({
                     success: false,
                     msg: `You have already confrimed - Phone Number- ${phone_number}`
                 })
-            }
-            else{
-                db.query(`UPDATE queue
+            } else {
+                db.query(`UPDATE mydb_queue.queue
                 SET acknowledge = true
                 WHERE queue_id = ${exist[0].queue_id};`, function (err) {
-                    if(err){
+                    if (err) {
                         res.status(400).send({
                             success: false,
                             msg: "Something Went Wrong"
                         })
-                    }
-                    else{
+                    } else {
                         res.status(200).send({
                             success: true,
                             msg: `Successfully Confrimed Queue - Phone Number- ${phone_number}`
@@ -173,31 +172,41 @@ app.put('/customer/confrim', (req, res) => {
 app.put('/shop/next', (req, res) => {
     // check if customer is in queue
     var shop_id = req.body.shop_id;
-    db.query(`select * from queue where is_done = false and shop_shop_id = ${shop_id}`, function (err, exist) {
+    db.query(`select * from mydb_queue.queue where is_done = false and shop_shop_id = ${shop_id}`, function (err, exist) {
         if (err) {
             res.status(400).send({
                 success: false,
                 msg: "Something Went Wrong"
             })
         } else {
-            if(exist.length == 0){
+            if (exist.length == 0) {
                 res.status(404).send({
                     success: false,
                     msg: "There is no customers in queue and the shop doesn't exist"
                 })
-            }
-           
-            else{
-                db.query(`UPDATE queue
+            } else {
+                db.query(`UPDATE mydb_queue.queue
                 SET is_done = true
                 WHERE queue_id = ${exist[0].queue_id};`, function (err) {
-                    if(err){
+                    if (err) {
                         res.status(400).send({
                             success: false,
                             msg: "Something Went Wrong"
                         })
-                    }
-                    else{
+                    } else {
+                        // send alert to customer
+                        // console.log(exist.length)
+                        for (var i =1; i < exist.length; i++) {
+                            // console.log('test')
+                            // next 3 people
+                            if (i == 5) {
+                                break;
+                            }
+                            if (exist[i].is_alert == 0) {
+                                sendAlert(exist[i].queue_id,exist[i].phone_number)
+                            }
+                        }
+
                         res.status(200).send({
                             success: true,
                             msg: `Successfully Move to next person in line, Next Queue Number - ${exist[0].queue_number}`
@@ -206,16 +215,35 @@ app.put('/shop/next', (req, res) => {
                 });
             }
 
+
         }
     });
 
 })
 
-// set alert to true
-app.put('/queue/alert/:shop_id/:phone_number', (req, res) => {
+function sendAlert(queue_id,phone_number) {
+    console.log(queue_id)
+    console.log("Sending alert to " + phone_number);
+    db.query(`UPDATE mydb_queue.queue
+    SET is_alert = true where queue_id = ${queue_id}`, function (err, exist) {
+        if (err) {
+            res.status(400).send({
+                success: false,
+                msg: "Something Went Wrong"
+            })
+        }
+
+    })
+    return true
+}
+
+
+
+// set alert to true Don't need this already
+app.put('/queue/alert/', (req, res) => {
     // check if customer is in queue
-    var shop_id = req.params.shop_id;
-    var phone_number = req.params.phone_number;
+    var shop_id = req.body.shop_id;
+    var phone_number = req.body.phone_number;
     db.query(`select * from queue where is_done = false and is_alert = false and phone_number = ${phone_number} and shop_shop_id = ${shop_id}`, function (err, exist) {
         if (err) {
             res.status(400).send({
@@ -223,23 +251,21 @@ app.put('/queue/alert/:shop_id/:phone_number', (req, res) => {
                 msg: "Something Went Wrong"
             })
         } else {
-            if(exist.length == 0){
+            if (exist.length == 0) {
                 res.status(400).send({
                     success: false,
                     msg: "Customer doesn't exist or alert has been sent"
                 })
-            }
-            else{
+            } else {
                 db.query(`UPDATE queue
                 SET is_alert = true
                 WHERE queue_id = ${exist[0].queue_id};`, function (err) {
-                    if(err){
+                    if (err) {
                         res.status(400).send({
                             success: false,
                             msg: "Something Went Wrong"
                         })
-                    }
-                    else{
+                    } else {
                         res.status(200).send({
                             success: true,
                             msg: `Successfully sent alert to ${exist[0].queue_number}`
