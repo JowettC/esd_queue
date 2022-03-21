@@ -1,10 +1,10 @@
 var mysql = require('mysql');
-require('dotenv').config();
+
 var con = mysql.createConnection({
-  host: "mysql+mysqlconnector://is213@host.docker.internal:3306/mydb_queue",
+  host: "127.0.0.1",
   user: "root",
   password: "",
-  database: "mydb_queue"
+  database: "mydb"
 });
 
 con.connect(function(err) {
