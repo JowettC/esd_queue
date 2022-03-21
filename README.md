@@ -10,3 +10,6 @@ Go to wampp -> myPhpAdmin -> sql -> run the mysql statements
 ``` node index.js ```
 
 ### It runs on localhost:3000
+
+### docker deployment
+docker run -p 3000:3000 jowettc/esdqueue

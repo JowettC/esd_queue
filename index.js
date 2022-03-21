@@ -60,55 +60,42 @@ app.post('/queue', async (req, res) => {
             } else {
                 var size = queue.length;
                 //  check if shope exist
-                db.query(`select name from mydb_shop.shop where shop_id = ${req.body.shop_id}`, function (err, shop_name) {
+
+
+                var queueNumber = "ESDShop" + req.body.shop_id + "-" + size;
+                // check if person queued up already
+                db.query(`SELECT * FROM mydb_queue.queue WHERE phone_number =${req.body.phone_number} and is_done = false`, function (err, exist) {
                     if (err) {
-                        res.status(400).send({
-                            success: false,
-                            msg: "Something Went Wrong"
-                        })
+                        console.log(err)
                     } else {
-                        if (shop_name.length == 0) {
-                            res.status(404).send({
+                        if (exist.length > 0) {
+                            res.status(400).send({
                                 success: false,
-                                msg: "Shop doesn't exist"
+                                msg: "Already in the Queue"
                             })
-                            return
-                        }
-                        var queueNumber = shop_name[0].name + "-" + size;
-                        // check if person queued up already
-                        db.query(`SELECT * FROM mydb_queue.queue WHERE phone_number =${req.body.phone_number} and is_done = false`, function (err, exist) {
-                            if (err) {
-                                console.log(err)
-                            } else {
-                                if (exist.length > 0) {
-                                    res.status(400).send({
-                                        success: false,
-                                        msg: "Already in the Queue"
-                                    })
+                        } else {
+                            // insert queue
+                            db.query(`INSERT INTO mydb_queue.queue (queue_number,is_done,time_created,phone_number,shop_shop_id,is_alert) 
+                        values("${queueNumber}",false,"${dayjs().format("YYYY-DD-MM HH:MM:00")}",${req.body.phone_number},${req.body.shop_id},false);`, function (err) {
+                                if (err) {
+                                    console.log(err)
                                 } else {
-                                    // insert queue
-                                    db.query(`INSERT INTO mydb_queue.queue (queue_number,is_done,time_created,phone_number,shop_shop_id,is_alert,acknowledge) 
-                        values("${queueNumber}",false,"${dayjs().format("YYYY-DD-MM HH:MM:00")}",${req.body.phone_number},${req.body.shop_id},false,false);`, function (err) {
-                                        if (err) {
-                                            console.log(err)
-                                        } else {
-                                            res.status(200).send({
-                                                success: true,
-                                                data: req.body,
-                                                queue_number: queueNumber,
-                                                msg: "Successfully Entered Queue"
+                                    res.status(200).send({
+                                        success: true,
+                                        data: req.body,
+                                        queue_number: queueNumber,
+                                        msg: "Successfully Entered Queue"
 
-                                            })
-                                        }
-                                    });
-
-
+                                    })
                                 }
-                            }
-                        });
+                            });
 
+
+                        }
                     }
                 });
+
+
 
             }
         });
@@ -122,51 +109,44 @@ app.post('/queue', async (req, res) => {
 
 })
 // customer acknowledge queue potentially removed
-app.put('/customer/confrim', (req, res) => {
-    var phone_number = req.body.phone_number;
-    var shop_id = req.body.shop_id;
-    // check if customer is in queue
-    db.query(`select queue_id,acknowledge from mydb_queue.queue where phone_number = ${phone_number} and shop_shop_id = ${shop_id} and is_done = false`, function (err, exist) {
-        if (err) {
-            res.status(400).send({
-                success: false,
-                msg: err
-            })
-        } else {
-            if (exist.length == 0) {
-                res.status(404).send({
-                    success: false,
-                    msg: "You're not in queue, please get queue number"
-                })
-            }
-            // console.log(exist[0].acknowledge)
-            if (exist[0].acknowledge == 1) {
-                res.status(400).send({
-                    success: false,
-                    msg: `You have already confrimed - Phone Number- ${phone_number}`
-                })
-            } else {
-                db.query(`UPDATE mydb_queue.queue
-                SET acknowledge = true
-                WHERE queue_id = ${exist[0].queue_id};`, function (err) {
-                    if (err) {
-                        res.status(400).send({
-                            success: false,
-                            msg: "Something Went Wrong"
-                        })
-                    } else {
-                        res.status(200).send({
-                            success: true,
-                            msg: `Successfully Confrimed Queue - Phone Number- ${phone_number}`
-                        })
-                    }
-                });
-            }
+// app.put('/customer/confrim', (req, res) => {
+//     var phone_number = req.body.phone_number;
+//     var shop_id = req.body.shop_id;
+//     // check if customer is in queue
+//     db.query(`select queue_id from mydb_queue.queue where phone_number = ${phone_number} and shop_shop_id = ${shop_id} and is_done = false`, function (err, exist) {
+//         if (err) {
+//             res.status(400).send({
+//                 success: false,
+//                 msg: err
+//             })
+//         } else {
+//             if (exist.length == 0) {
+//                 res.status(404).send({
+//                     success: false,
+//                     msg: "You're not in queue, please get queue number"
+//                 })
+//             }
+//             db.query(`UPDATE mydb_queue.queue
+//                 SET acknowledge = true
+//                 WHERE queue_id = ${exist[0].queue_id};`, function (err) {
+//                 if (err) {
+//                     res.status(400).send({
+//                         success: false,
+//                         msg: "Something Went Wrong"
+//                     })
+//                 } else {
+//                     res.status(200).send({
+//                         success: true,
+//                         msg: `Successfully Confrimed Queue - Phone Number- ${phone_number}`
+//                     })
+//                 }
+//             });
 
-        }
-    });
 
-})
+//         }
+//     });
+
+// })
 
 // shop move next queue
 app.put('/shop/next', (req, res) => {
@@ -196,14 +176,14 @@ app.put('/shop/next', (req, res) => {
                     } else {
                         // send alert to customer
                         // console.log(exist.length)
-                        for (var i =1; i < exist.length; i++) {
+                        for (var i = 1; i < exist.length; i++) {
                             // console.log('test')
                             // next 3 people
                             if (i == 5) {
                                 break;
                             }
                             if (exist[i].is_alert == 0) {
-                                sendAlert(exist[i].queue_id,exist[i].phone_number)
+                                sendAlert(exist[i].queue_id, exist[i].phone_number)
                             }
                         }
 
@@ -221,7 +201,7 @@ app.put('/shop/next', (req, res) => {
 
 })
 
-function sendAlert(queue_id,phone_number) {
+function sendAlert(queue_id, phone_number) {
     console.log(queue_id)
     console.log("Sending alert to " + phone_number);
     db.query(`UPDATE mydb_queue.queue

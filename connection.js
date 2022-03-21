@@ -1,8 +1,10 @@
 var mysql = require('mysql');
 
 var con = mysql.createConnection({
-  // host: "host.docker.internal",
-  host: "127.0.0.1",
+  // for when deployed to dockers
+  host: "host.docker.internal",
+  // for local machine 
+  // host: "127.0.0.1",
   user: "root",
   password: "",
   database: ""
