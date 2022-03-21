@@ -11,5 +11,6 @@ Go to wampp -> myPhpAdmin -> sql -> run the mysql statements
 
 ### It runs on localhost:3000
 
-### docker deployment
-docker run -p 3000:3000 jowettc/esdqueue
+### docker stuff
+docker build . -t jowettc/esdqueue
+docker run --name queue --network my-net -e jowettc/book:1.0
